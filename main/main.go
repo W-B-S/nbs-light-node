@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"os/user"
 	"fmt"
+	"context"
+	"github.com/W-B-S/nbs-light-node/core"
 )
 
 const (logFileName = "NBS-Server.log")
@@ -48,14 +50,23 @@ func initLogFile() error{
 	backend1 := logging.NewLogBackend(logFile, "", 0)
 
 	backend2Formatter := logging.NewBackendFormatter(backend1, format)
-
-	// Only errors and more severe messages should be sent to backend1
 	backend1Leveled := logging.AddModuleLevel(backend2Formatter)
-	backend1Leveled.SetLevel(logging.WARNING, "")
+	backend1Leveled.SetLevel(logging.INFO, "")
 
 	logging.SetBackend(backend1Leveled)
 
 	return nil
+}
+
+
+func createLightNode(ctx context.Context) (*core.NbsLightNode, error){
+
+	node, err := core.NewLightNode(ctx)
+	if err != nil{
+		return nil, err
+	}
+
+	return node, nil
 }
 
 func main()  {
@@ -64,4 +75,11 @@ func main()  {
 		fmt.Errorf("---nbs-light-node---:failed to initLogFile:%s", err)
 		return
 	}
+
+	node, err := createLightNode(context.Background())
+	if err != nil{
+		log.Error("---Failed to setup light node---,error:%s", err)
+	}
+
+	node.Run()
 }
