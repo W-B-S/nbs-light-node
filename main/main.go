@@ -10,7 +10,7 @@ import (
 	"github.com/W-B-S/nbs-light-node/core"
 )
 
-const (logFileName = "NBS-Server.log")
+const (logFileName = "NBS-Light-Node.log")
 
 var log = logging.MustGetLogger("nbs/light-node")
 
@@ -72,7 +72,7 @@ func createLightNode(ctx context.Context) (*core.NbsLightNode, error){
 func main()  {
 
 	if err := initLogFile(); err != nil{
-		fmt.Errorf("---nbs-light-node---:failed to initLogFile:%s", err)
+		_ = fmt.Errorf("---nbs-light-node---:failed to initLogFile:%s", err)
 		return
 	}
 
