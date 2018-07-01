@@ -1,6 +1,6 @@
 // +build windows
 
-package main
+package utils
 
 var isPlatformDarwin = false
 var isPlatformLinux = false

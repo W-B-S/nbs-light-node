@@ -2,11 +2,7 @@ package core
 
 import (
 	"context"
-
-
 	p2p "github.com/ipfs/go-ipfs/p2p"
-
-
 	p2phost "gx/ipfs/QmQQGtcp6nVUrQjNsnU53YWV1q8fK1Kd9S7FEkYbRZzxry/go-libp2p-host"
 	goprocess "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess"
 	discovery "gx/ipfs/QmUEAR2pS7fP1GPseS3i8MWFyENs7oDp4CZrgn8FCjbsBu/go-libp2p/p2p/discovery"
@@ -16,13 +12,13 @@ import (
 	metrics "gx/ipfs/QmRg1gKTHzc3CZXSKzem8aR4E3TubFhbgXwfVuWnSK5CC5/go-metrics-interface"
 	floodsub "gx/ipfs/QmRFEBGcNjtWPupwHA7zGHeGVLuUyE4ZRFi2MgtrPM6pfb/go-libp2p-floodsub"
 	"github.com/whyrusleeping/go-logging"
-
 )
 
 var log = logging.MustGetLogger("nbs/light-node")
 
 type NbsLightNode struct {
 	identity 	peer.ID
+
 	privateKey  ic.PrivKey // the local node's private Key
 	discovery  	discovery.Service
 
@@ -53,17 +49,22 @@ func NewLightNode(ctx context.Context) (*NbsLightNode, error) {
 
 func (node *NbsLightNode) Run()  {
 	log.Info("---Start running---")
+
+
+
+
 	defer func() {
 		select {
 			case <-node.ctx.Done():
 				log.Info("---Node finished---")
-		default:
-			log.Info("--------1--------")
 		}
 	}()
 }
 
 func setUpNode(ctx context.Context, node *NbsLightNode) error{
+
+
+
 	return nil
 }
 
