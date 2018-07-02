@@ -17,11 +17,12 @@ var SystemConfig *NodeConfig
 
 
 type NodeConfig struct {
-	PeerID	string `json:"peerid, omitempty"`
+	peerID	string `json:"peerid, omitempty"`
+	privKey string `json:",omitempty"`
 }
 
 var defaultConfig = NodeConfig{
-	PeerID:"",
+	peerID:"",
 }
 
 
@@ -40,7 +41,7 @@ func getDefaultPath() string{
 //TODO::
 func initSystemConfig(){
 
-	defaultConfig.PeerID = "100132"
+	defaultConfig.peerID = "100132"
 }
 
 func createDefaultConfig(path string)  {
