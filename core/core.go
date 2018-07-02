@@ -68,7 +68,13 @@ func (node *NbsLightNode) Run()  {
 
 func setUpNode(ctx context.Context, node *NbsLightNode) error{
 
-	node.identity = peer.ID(GetSysConfig().PeerID)
+	id, err := GetSysConfig().LoadId()
+	if err != nil{
+		log.Error("Failed to load node's identity", err)
+		return err
+	}
+
+	node.identity = id
 
 	node.peerStore = pstore.NewPeerstore()
 

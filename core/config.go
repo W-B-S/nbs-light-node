@@ -6,6 +6,9 @@ import (
 	"os"
 	"encoding/json"
 	"io"
+	"fmt"
+	"github.com/W-B-S/nbs-light-node/errors"
+	peer "gx/ipfs/QmVf8hTAsLLFtn4WPCRNdnaF2Eag2qTBS6uR8AiHPZARXy/go-libp2p-peer"
 )
 
 const (	LogFileName 	= "NBS-Light-Node.log"
@@ -25,13 +28,32 @@ var defaultConfig = NodeConfig{
 	peerID:"",
 }
 
-
 func init()  {
 	SystemConfig = LoadFromDisk()
 }
 
 func GetSysConfig() (NodeConfig) {
 	return *SystemConfig
+}
+
+func (config NodeConfig) LoadId() (peer.ID, error){
+
+	cid := config.peerID
+	if cid == "" {
+		return "", errors.New("identity was not set in config")
+	}
+
+	if len(cid) == 0 {
+		return "", errors.New("no peer ID in config! (was 'ipfs init' run?)")
+	}
+
+	id, err := peer.IDB58Decode(cid)
+
+	if err != nil {
+		return "", fmt.Errorf("peer ID invalid: %s", err)
+	}
+
+	return id, nil
 }
 
 func getDefaultPath() string{
