@@ -14,12 +14,12 @@ import (
 	"github.com/whyrusleeping/go-logging"
 )
 
-var log = logging.MustGetLogger("nbs/light-node")
+var log = logging.MustGetLogger("nbs/core")
 
 type NbsLightNode struct {
 	identity 	peer.ID
 
-	privateKey  ic.PrivKey // the local node's private Key
+	privateKey  ic.PrivKey
 	discovery  	discovery.Service
 
 	peerHost    p2phost.Host
@@ -32,6 +32,7 @@ type NbsLightNode struct {
 }
 
 func NewLightNode(ctx context.Context) (*NbsLightNode, error) {
+
 	ctx = metrics.CtxScope(ctx, "nbs-light-node")
 
 	node := &NbsLightNode{
@@ -63,7 +64,7 @@ func (node *NbsLightNode) Run()  {
 
 func setUpNode(ctx context.Context, node *NbsLightNode) error{
 
-
+	node.identity = peer.ID(GetSysConfig().PeerID)
 
 	return nil
 }

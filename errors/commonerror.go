@@ -2,28 +2,25 @@ package errors
 
 const CommonError  = -10001
 
-type NbsError interface {
-	ErrorNo()	int
-	Error() 	string
+
+type NbsError struct {
+	errno	int
+	what 	string
+	Err  	error
 }
 
 func New(text string) error {
-	return &nbsError{errno:CommonError, what:text}
+	return &NbsError{errno:CommonError, what:text}
 }
 
 func New2(errno int, text string) error {
-	return &nbsError{errno:errno, what:text}
+	return &NbsError{errno:errno, what:text}
 }
 
-type nbsError struct {
-	errno	int
-	what 	string
-}
-
-func (err *nbsError) Error() string {
+func (err *NbsError) Error() string {
 	return err.what
 }
 
-func (err *nbsError) ErrorNo() int {
+func (err *NbsError) ErrorNo() int {
 	return err.errno
 }
