@@ -6,7 +6,6 @@ import (
 	"os"
 	"encoding/json"
 	"io"
-	"fmt"
 )
 
 const (	LogFileName 	= "NBS-Light-Node.log"
@@ -107,7 +106,6 @@ func LoadFromDisk() (*NodeConfig){
 			}
 
 			jsonContent = jsonContent + string(buffer[:number])
-			fmt.Printf("json:%s-buffer:%s-len:%d", jsonContent, string(buffer[:number]), number)
 		}
 
 		config := &NodeConfig{}
