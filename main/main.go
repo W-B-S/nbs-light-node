@@ -23,6 +23,7 @@ func main()  {
 	node, err := createLightNode(context.Background())
 	if err != nil{
 		NbsLog.Error("---Failed to setup light node---,error:%s", err)
+		return
 	}
 
 	node.Run()

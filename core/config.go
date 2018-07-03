@@ -15,22 +15,28 @@ import (
 )
 
 const (	LogFileName 	= "NBS-Light-Node.log"
-		ConfigFileName 	= ".config")
+		ConfigFileName 	= "config"
+		CurrentSystemVersion = "0.01")
+//TODO:: use make file to setup system version LFLAG-x main.system=0.0.1
 
 var NbsLog = logging.MustGetLogger("core/config")
 
 var SystemConfig NodeConfig
 
-
 type NodeConfig struct {
-	PeerID	string `json:"peerId"`
-	PrivateKey string `json:",omitempty"`
-	EncryptedPrivateKey string `json:"privateKey,omitempty"`
-	Swarm      []string
+	PeerID				string 		`json:"peerId"`
+	PrivateKey 			string 		`json:"privateKey,omitempty"`
+	EncryptedPrivateKey string 		`json:"encryptedKey,omitempty"`
+	Swarm      			[]string
+	Version 			string 		`json:"version,omitempty"`
 }
 
 func init()  {
 	SystemConfig = initSystemConfig()
+
+	if SystemConfig.Version != CurrentSystemVersion{
+		SystemConfig.migrateSystemConfig()
+	}
 }
 
 func GetSysConfig() (NodeConfig) {
@@ -83,12 +89,7 @@ func (config *NodeConfig)createDefaultIdentity() error{
 	config.PrivateKey = base64.StdEncoding.EncodeToString(privateKeyBytes)
 
 	//TODO::	save the private key by encrypted data
-	//config.EncryptedPrivateKey = ?
-
-	config.Swarm =[]string{
-		"/ip4/0.0.0.0/tcp/4001",
-		"/ip6/::/tcp/4001",
-	}
+	//config.EncryptedPrivateKey = "-1"
 
 	return nil
 }
@@ -124,10 +125,16 @@ func createDefaultConfig(path string) (NodeConfig, error) {
 
 	config.createDefaultIdentity()
 
+	config.Swarm =[]string{
+		"/ip4/0.0.0.0/tcp/4001",
+		"/ip6/::/tcp/4001",
+	}
+
+	config.Version = CurrentSystemVersion
+
 	err := config.syncToRepo(path)
 	if err != nil{
-		fmt.Errorf("failed to save config to disk!:%s", err.Error())
-		return config, err
+		return config, fmt.Errorf("failed to save config to disk!:%s", err.Error())
 	}
 
 	return config, nil
@@ -135,8 +142,6 @@ func createDefaultConfig(path string) (NodeConfig, error) {
 
 
 func loadFromRepo(path string) (NodeConfig){
-
-	config := NodeConfig{}
 
 	logFile, err := os.OpenFile(path, os.O_RDONLY, 0600)
 	if err != nil{
@@ -159,7 +164,11 @@ func loadFromRepo(path string) (NodeConfig){
 		jsonContent = jsonContent + string(buffer[:number])
 	}
 
-	json.Unmarshal([]byte(jsonContent), config)
+	config := NodeConfig{}
+	if err := json.Unmarshal([]byte(jsonContent), &config); err != nil{
+		fmt.Errorf("failed to load configuration from disk!:%s", err.Error())
+		panic(err)
+	}
 
 	return config
 }
@@ -186,4 +195,8 @@ func initSystemConfig() (NodeConfig){
 
 		return loadFromRepo(path)
 	}
+}
+
+func (config NodeConfig) migrateSystemConfig(){
+	//TODO::migrate system config when software upgrade
 }
