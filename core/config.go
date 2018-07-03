@@ -23,9 +23,10 @@ var SystemConfig NodeConfig
 
 
 type NodeConfig struct {
-	PeerID	string `json:"peerId, omitempty"`
+	PeerID	string `json:"peerId"`
 	PrivateKey string `json:",omitempty"`
 	EncryptedPrivateKey string `json:"privateKey,omitempty"`
+	Swarm      []string
 }
 
 func init()  {
@@ -81,8 +82,13 @@ func (config *NodeConfig)createDefaultIdentity() error{
 	config.PeerID = pid.Pretty()
 	config.PrivateKey = base64.StdEncoding.EncodeToString(privateKeyBytes)
 
-//TODO::	save the private key by encrypted data
-//  config.EncryptedPrivateKey = ?
+	//TODO::	save the private key by encrypted data
+	//config.EncryptedPrivateKey = ?
+
+	config.Swarm =[]string{
+		"/ip4/0.0.0.0/tcp/4001",
+		"/ip6/::/tcp/4001",
+	}
 
 	return nil
 }

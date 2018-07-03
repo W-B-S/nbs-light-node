@@ -2,11 +2,7 @@ package core
 
 import (
 	"context"
-	"github.com/ipfs/go-ipfs/p2p"
 	p2pHost "gx/ipfs/QmQQGtcp6nVUrQjNsnU53YWV1q8fK1Kd9S7FEkYbRZzxry/go-libp2p-host"
-	"gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess"
-	"gx/ipfs/QmUEAR2pS7fP1GPseS3i8MWFyENs7oDp4CZrgn8FCjbsBu/go-libp2p/p2p/discovery"
-	pubRouter "gx/ipfs/QmVJvKzFi93cWDknZr1UUKyLTJWVRRSixqCqwQ9nLfF8ob/go-libp2p-pubsub-router"
 	"gx/ipfs/QmVf8hTAsLLFtn4WPCRNdnaF2Eag2qTBS6uR8AiHPZARXy/go-libp2p-peer"
 	ic "gx/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5/go-libp2p-crypto"
 	"gx/ipfs/QmRg1gKTHzc3CZXSKzem8aR4E3TubFhbgXwfVuWnSK5CC5/go-metrics-interface"
@@ -15,6 +11,8 @@ import (
 	"gx/ipfs/QmUEAR2pS7fP1GPseS3i8MWFyENs7oDp4CZrgn8FCjbsBu/go-libp2p"
 	"github.com/whyrusleeping/go-logging"
 	"fmt"
+	"github.com/ipfs/go-ipfs/p2p"
+	ma "gx/ipfs/QmUxSEGbv2nmYNnfXi7839wwQqTN3kwQeUxe8dTjZWZs7J/go-multiaddr"
 )
 
 var log = logging.MustGetLogger("nbs/core")
@@ -24,15 +22,10 @@ type NbsLightNode struct {
 	identity 	peer.ID
 
 	privateKey  ic.PrivKey
-	discovery  	discovery.Service
-
 	peerStore  	peerStore.Peerstore
 	peerHost    p2pHost.Host
 	floodSub 	*floodsub.PubSub
-	PSRouter 	*pubRouter.PubsubValueStore
 	P2P      	*p2p.P2P
-
-	process		goprocess.Process
 }
 
 func NewLightNode(ctx context.Context) (*NbsLightNode, error) {
@@ -43,7 +36,7 @@ func NewLightNode(ctx context.Context) (*NbsLightNode, error) {
 		ctx:	ctx,
 	}
 
-	if err := setUpNode(ctx, node); err != nil{
+	if err := setupNode(ctx, node); err != nil{
 		return nil, err
 	}
 
@@ -64,7 +57,7 @@ func (node *NbsLightNode) Run()  {
 	}()
 }
 
-func setUpNode(ctx context.Context, node *NbsLightNode) error{
+func setupNode(ctx context.Context, node *NbsLightNode) error{
 
 	peerId, err := GetSysConfig().LoadId()
 	if err != nil{
@@ -73,15 +66,36 @@ func setUpNode(ctx context.Context, node *NbsLightNode) error{
 	}
 
 	node.identity = peerId
+
 	node.peerStore = peerStore.NewPeerstore()
 
-	var options []libp2p.Option
-
-	peerHost, err := constructPeerHost(ctx, node.identity, node.peerStore, options...)
-
-	if err != nil {
+	if err := setupFloodSub(ctx, node); err != nil{
 		return err
 	}
+
+
+	if err := startListening(node.peerHost); err != nil {
+		return err
+	}
+
+	node.P2P = p2p.NewP2P(node.identity, node.peerHost, node.peerStore)
+
+	return nil
+}
+
+func setupFloodSub(ctx context.Context, node *NbsLightNode) error{
+
+	//TODO:: no security conntections right now
+	var options = []libp2p.Option{libp2p.NoSecurity, libp2p.Peerstore(node.peerStore)}
+
+	privateKey :=  node.peerStore.PrivKey(node.identity)
+
+	if privateKey == nil {
+		return fmt.Errorf("missing private key for node ID: %s", node.identity.Pretty())
+	}
+	options = append(options, libp2p.Identity(privateKey))
+
+	peerHost, err := libp2p.New(ctx, options...)
 
 	service, err := floodsub.NewFloodSub(ctx, peerHost)
 	if err != nil {
@@ -89,15 +103,32 @@ func setUpNode(ctx context.Context, node *NbsLightNode) error{
 	}
 
 	node.floodSub = service
+	node.peerHost = peerHost
 
 	return nil
 }
 
-func constructPeerHost(ctx context.Context, id peer.ID, ps peerStore.Peerstore, options ...libp2p.Option) (p2pHost.Host, error) {
-	privateKey := ps.PrivKey(id)
-	if privateKey == nil {
-		return nil, fmt.Errorf("missing private key for node ID: %s", id.Pretty())
+func startListening(host p2pHost.Host) error{
+
+	var listenAddress []ma.Multiaddr
+	for _, addr := range GetSysConfig().Swarm {
+		multiAddress, err := ma.NewMultiaddr(addr)
+		if err != nil {
+			return fmt.Errorf("failure to parse config.Addresses.Swarm: %s", addr)
+		}
+		listenAddress = append(listenAddress, multiAddress)
 	}
-	options = append([]libp2p.Option{libp2p.Identity(privateKey), libp2p.Peerstore(ps)}, options...)
-	return libp2p.New(ctx, options...)
+
+	if err := host.Network().Listen(listenAddress...); err != nil {
+		return err
+	}
+
+	address, err := host.Network().InterfaceListenAddresses()
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Swarm listening at: %s", address)
+
+	return nil
 }
