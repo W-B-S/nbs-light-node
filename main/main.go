@@ -8,23 +8,9 @@ import (
 
 var NbsLog = logging.MustGetLogger("nbs/light-node")
 
-func createLightNode(ctx context.Context) (*core.NbsLightNode, error){
-
-	node, err := core.NewLightNode(ctx)
-	if err != nil{
-		return nil, err
-	}
-
-	return node, nil
-}
-
 func main()  {
 
-	node, err := createLightNode(context.Background())
-	if err != nil{
-		NbsLog.Error("---Failed to setup light node---,error:%s", err)
-		return
-	}
+	node := core.GetNodeInstance(context.Background())
 
 	node.Run()
 }
