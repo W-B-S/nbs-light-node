@@ -17,8 +17,8 @@ import (
 const (	LogFileName 	= "NBS-Light-Node.log"
 		ConfigFileName 	= "config"
 		CurrentSystemVersion = "0.01")
-//TODO:: use make file to setup system version LFLAG-x main.system=0.0.1
 
+//TODO:: use make file to setup system version LFLAG-x main.system=0.0.1
 var NbsLog = logging.MustGetLogger("core/config")
 
 var SystemConfig NodeConfig

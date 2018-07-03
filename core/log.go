@@ -29,7 +29,7 @@ func initLogs() error{
 
 	backend2Formatter := logging.NewBackendFormatter(backend1, format)
 	backend1Leveled := logging.AddModuleLevel(backend2Formatter)
-	backend1Leveled.SetLevel(logging.INFO, "")
+	backend1Leveled.SetLevel(logging.DEBUG, "")
 
 	logging.SetBackend(backend1Leveled)
 

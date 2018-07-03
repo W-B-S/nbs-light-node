@@ -13,9 +13,9 @@ import (
 	"fmt"
 	"github.com/ipfs/go-ipfs/p2p"
 	ma "gx/ipfs/QmUxSEGbv2nmYNnfXi7839wwQqTN3kwQeUxe8dTjZWZs7J/go-multiaddr"
+	"sync"
+	"encoding/base64"
 )
-
-var log = logging.MustGetLogger("nbs/core")
 
 type NbsLightNode struct {
 	ctx  		context.Context
@@ -28,7 +28,26 @@ type NbsLightNode struct {
 	P2P      	*p2p.P2P
 }
 
-func NewLightNode(ctx context.Context) (*NbsLightNode, error) {
+var log = logging.MustGetLogger("nbs/core")
+var once sync.Once
+var instanceNode *NbsLightNode
+
+func GetNodeInstance(ctx context.Context) (*NbsLightNode){
+
+	once.Do(func() {
+
+		node, err := newNode(ctx)
+		if err != nil{
+			panic(err)
+		}
+
+		instanceNode = node
+	})
+
+	return instanceNode
+}
+
+func newNode(ctx context.Context) (*NbsLightNode, error) {
 
 	ctx = metrics.CtxScope(ctx, "nbs-light-node")
 
@@ -64,21 +83,53 @@ func setupNode(ctx context.Context, node *NbsLightNode) error{
 		log.Error("Failed to load node's identity", err)
 		return err
 	}
-
 	node.identity = peerId
 
 	node.peerStore = peerStore.NewPeerstore()
 
-	if err := setupFloodSub(ctx, node); err != nil{
+	if err := node.loadPrivateKey(); err != nil{
 		return err
 	}
 
+	if err := setupFloodSub(ctx, node); err != nil{
+		return err
+	}
 
 	if err := startListening(node.peerHost); err != nil {
 		return err
 	}
 
 	node.P2P = p2p.NewP2P(node.identity, node.peerHost, node.peerStore)
+
+	return nil
+}
+
+func (node *NbsLightNode) loadPrivateKey() error {
+
+	pkb, err := base64.StdEncoding.DecodeString(GetSysConfig().PrivateKey)
+	if err != nil {
+		return err
+	}
+
+	//TODO:: use password to decode private key
+
+	sk, err := ic.UnmarshalPrivateKey(pkb)
+	if err != nil {
+		return err
+	}
+
+	id2, err := peer.IDFromPrivateKey(sk)
+	if err != nil {
+		return err
+	}
+
+	if id2 != node.identity {
+		return fmt.Errorf("private key in config does not match id: %s != %s", node.identity, id2)
+	}
+
+	node.privateKey = sk
+	node.peerStore.AddPrivKey(node.identity, node.privateKey)
+	node.peerStore.AddPubKey(node.identity, sk.GetPublic())
 
 	return nil
 }
